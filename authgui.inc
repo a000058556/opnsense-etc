@@ -406,7 +406,7 @@ function display_login_form($Login_Error)
     }
     ?>
     <div class="row">
-        <div class="col-sm-6">
+        <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
             <main class="login-modal-container">
             <header class="login-modal-head" style="height:50px;">
                 <div class="navbar-brand">
@@ -448,8 +448,8 @@ function display_login_form($Login_Error)
             </main>
         </div>
         <div class="col-sm-6">
-            <div>
-                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('../ui/themes/opnsense/build/images/bg-01.jpg');"></div>
+            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
+                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('../ui/themes/opnsense/build/images/bg-01.jpg')"></div>
             </div>
         </div>
     </div>
