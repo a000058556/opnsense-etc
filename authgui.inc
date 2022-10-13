@@ -449,8 +449,23 @@ function display_login_form($Login_Error)
         </div>
         <div class="col-sm-6">
             <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
-                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" >
-                    <img src="/ui/themes/opnsense/build/images/bg-01.jpg" class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6">
+                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('../ui/themes/opnsense/build/images/bg-01.jpg')">
+                    <!-- <img src="/ui/themes/opnsense/build/images/bg-01.jpg" class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6"> -->
+                </div>
+            </div>
+            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
+                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('/ui/themes/opnsense/build/images/bg-01.jpg')">
+                    <!-- <img src="/ui/themes/opnsense/build/images/bg-01.jpg" class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6"> -->
+                </div>
+            </div>
+            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
+                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('./ui/themes/opnsense/build/images/bg-01.jpg')">
+                    <!-- <img src="/ui/themes/opnsense/build/images/bg-01.jpg" class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6"> -->
+                </div>
+            </div>
+            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
+                <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" style="background-image:url('https://130.211.251.29/ui/themes/opnsense/build/images/bg-01.jpg')">
+                    <!-- <img src="/ui/themes/opnsense/build/images/bg-01.jpg" class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6"> -->
                 </div>
             </div>
         </div>
