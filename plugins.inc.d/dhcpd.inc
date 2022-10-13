@@ -345,32 +345,40 @@ function dhcpd_radvd_configure($verbose = false, $blacklist = array())
             }
         }
 
-        $dnslist_tmp = [];
-
-        if (isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['dnsserver'][0])) {
-            $dnslist_tmp = $dhcpv6ifconf['dnsserver'];
-        } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['radnsserver'][0])) {
-            $dnslist_tmp = $dhcpv6ifconf['radnsserver'];
-        } elseif (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
-            if (is_ipaddrv6($ifcfgipv6)) {
-                $dnslist_tmp[] = $ifcfgipv6;
-            } else {
-                log_error("Warning! dhcpd_radvd_configure(manual) found no suitable IPv6 address on {$realif}");
-            }
-        } elseif (!empty($config['system']['dnsserver'][0])) {
-            $dnslist_tmp = $config['system']['dnsserver'];
-        }
-
         $dnslist = [];
+        $dnssl = null;
 
-        foreach ($dnslist_tmp as $server) {
-            if (is_ipaddrv6($server)) {
-                $dnslist[] = $server;
+        /* advertise both DNS servers and domains via RA (RFC 8106) if allowed */
+        if (!isset($dhcpv6ifconf['radisablerdnss'])) {
+            $dnslist_tmp = [];
+
+            if (isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['dnsserver'][0])) {
+                $dnslist_tmp = $dhcpv6ifconf['dnsserver'];
+            } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['radnsserver'][0])) {
+                $dnslist_tmp = $dhcpv6ifconf['radnsserver'];
+            } elseif (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
+                if (is_ipaddrv6($ifcfgipv6)) {
+                    $dnslist_tmp[] = $ifcfgipv6;
+                } else {
+                    log_error("Warning! dhcpd_radvd_configure(manual) found no suitable IPv6 address on {$realif}");
+                }
+            } elseif (!empty($config['system']['dnsserver'][0])) {
+                $dnslist_tmp = $config['system']['dnsserver'];
             }
-        }
 
-        if (isset($dhcpv6ifconf['radisablerdnss'])) {
-            $dnslist = [];
+            foreach ($dnslist_tmp as $server) {
+                if (is_ipaddrv6($server)) {
+                    $dnslist[] = $server;
+                }
+            }
+
+            if (isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['domainsearchlist'])) {
+                $dnssl = implode(' ', explode(';', $dhcpv6ifconf['domainsearchlist']));
+            } elseif (!isset($dhcpv6ifconf['rasamednsasdhcp6']) && !empty($dhcpv6ifconf['radomainsearchlist'])) {
+                $dnssl = implode(' ', explode(';', $dhcpv6ifconf['radomainsearchlist']));
+            } elseif (!empty($config['system']['domain'])) {
+                $dnssl = $config['system']['domain'];
+            }
         }
 
         if (count($dnslist) > 0) {
@@ -381,13 +389,6 @@ function dhcpd_radvd_configure($verbose = false, $blacklist = array())
             $radvdconf .= "\t};\n";
         }
 
-        if (!empty($dhcpv6ifconf['radomainsearchlist'])) {
-            $dnssl = implode(' ', explode(';', $dhcpv6ifconf['radomainsearchlist']));
-        } elseif (!empty($config['system']['domain'])) {
-            $dnssl = $config['system']['domain'];
-        } else {
-            $dnssl = null;
-        }
         if (!empty($dnssl)) {
             $radvdconf .= "\tDNSSL {$dnssl} {\n";
             if (!empty($dhcpv6ifconf['AdvDNSSLLifetime'])) {
@@ -555,7 +556,7 @@ function dhcpd_dhcp4_configure($verbose = false)
     global $config;
 
     $need_ddns_updates = false;
-    $ddns_zones = array();
+    $ddns_zones = [];
 
     killbypid('/var/dhcpd/var/run/dhcpd.pid', 'TERM', true);
 
@@ -569,7 +570,7 @@ function dhcpd_dhcp4_configure($verbose = false)
     }
 
     /* Only consider DNS servers with IPv4 addresses for the IPv4 DHCP server. */
-    $dns_arrv4 = array();
+    $dns_arrv4 = [];
     if (!empty($config['system']['dnsserver'][0])) {
         foreach ($config['system']['dnsserver'] as $dnsserver) {
             if (is_ipaddrv4($dnsserver)) {
@@ -614,8 +615,8 @@ authoritative;
 
 EOD;
 
-    $dhcpdifs = array();
     $omapi_added = false;
+    $dhcpdifs = [];
 
     /*
      * loop through and determine if we need
@@ -701,7 +702,7 @@ EOPP;
         $subnetmask = gen_subnet_mask($ifcfgsn);
         $subnet = explode('/', $ifcfgnet)[0];
 
-        $all_pools = array();
+        $all_pools = [];
         $all_pools[] = $dhcpifconf;
         if (!empty($dhcpifconf['pool'])) {
             $all_pools = array_merge($all_pools, $dhcpifconf['pool']);
@@ -717,7 +718,7 @@ EOPP;
             $dnscfg .= "  option domain-search \"" . join("\",\"", preg_split("/[ ;]+/", $dhcpifconf['domainsearchlist'])) . "\";\n";
         }
 
-        $newzone = array();
+        $newzone = [];
 
         if (isset($dhcpifconf['ddnsupdate'])) {
             $need_ddns_updates = true;
@@ -744,12 +745,12 @@ EOPP;
             }
         } elseif (isset($config['dnsmasq']['enable']) || isset($config['unbound']['enable'])) {
             $dnscfg .= "  option domain-name-servers {$ifcfgip};";
-            if ($newzone['domain-name'] && !empty($config['system']['dnsserver'][0])) {
-                $newzone['dns-servers'] = $config['system']['dnsserver'];
+            if (!empty($newzone['domain-name'])) {
+                $newzone['dns-servers'] = [$ifcfgip];
             }
         } elseif (!empty($dns_arrv4)) {
             $dnscfg .= "  option domain-name-servers " . join(",", $dns_arrv4) . ";";
-            if ($newzone['domain-name']) {
+            if (!empty($newzone['domain-name'])) {
                 $newzone['dns-servers'] = $dns_arrv4;
             }
         }
@@ -759,7 +760,7 @@ EOPP;
          * Join them into one big comma-separated string then split
          * them all up.
          */
-        $all_mac_strings = array();
+        $all_mac_strings = [];
         foreach ($all_pools as $poolconf) {
             if (!empty($poolconf['mac_allow'])) {
                 $all_mac_strings[] = $poolconf['mac_allow'];
@@ -855,7 +856,7 @@ EOPP;
                 ) {
                     $pdnscfg .= "    ddns-domainname \"{$poolconf['ddnsdomain']}\";\n";
 
-                    $newddnszone = array();
+                    $newddnszone = [];
                     $newddnszone['domain-name'] = $poolconf['ddnsdomain'];
                     $newddnszone['dns-servers'] = array($poolconf['ddnsdomainprimary']);
                     $newddnszone['ddnsdomainkeyname'] = $poolconf['ddnsdomainkeyname'];
@@ -1188,7 +1189,7 @@ EOD;
             $ddns_zones[] = $newzone;
         }
 
-        if ($dhcpifconf['omapi'] && !$omapi_added) {
+        if (isset($dhcpifconf['omapi']) && !$omapi_added) {
             $dhcpdconf .= "\nomapi-port {$dhcpifconf['omapiport']};\n";
             if (isset($dhcpifconf['omapialgorithm']) && isset($dhcpifconf['omapikey'])) {
                 $dhcpdconf .= "key omapi_key {\n";
@@ -1231,12 +1232,12 @@ function dhcpd_zones($ddns_zones, $ipproto = 'inet')
 {
     $dhcpdconf = '';
     if (is_array($ddns_zones)) {
-        $added_zones = array();
-        $added_keys = array();
+        $added_zones = [];
+        $added_keys = [];
         foreach ($ddns_zones as $zone) {
             $versionsuffix = $ipproto == "inet6" ? "6" : "";
             // We don't need to add zones multiple times.
-            foreach (array($zone['domain-name'], $zone['ptr-domain']) as $domain) {
+            foreach ([$zone['domain-name'], $zone['ptr-domain']] as $domain) {
                 if (!empty($domain) && !in_array($domain, $added_zones)) {
                     /* dhcpdconf2 is injected *after* the key */
                     $dhcpdconf2 = "zone {$domain}. {\n";
@@ -1244,7 +1245,7 @@ function dhcpd_zones($ddns_zones, $ipproto = 'inet')
                     $dhcpdconf2 .= "  primary{$versionsuffix} {$zone['dns-servers'][0]};\n";
                     if (!empty($zone['ddnsdomainkeyname']) && !empty($zone['ddnsdomainkey'])) {
                         if (!in_array($zone['ddnsdomainkeyname'], $added_keys)) {
-                            $dhcpdconf .= "key {$zone['ddnsdomainkeyname']} {\n";
+                            $dhcpdconf .= "\nkey {$zone['ddnsdomainkeyname']} {\n";
                             $dhcpdconf .= "  algorithm {$zone['ddnsdomainalgorithm']};\n";
                             $dhcpdconf .= "  secret {$zone['ddnsdomainkey']};\n";
                             $dhcpdconf .= "}\n";
@@ -1396,6 +1397,7 @@ function dhcpd_dhcp6_configure($verbose = false, $blacklist = array())
 
     $dhcpdv6conf = <<<EOD
 option dhcp6.domain-search "{$config['system']['domain']}";
+option dhcp6.rapid-commit;
 {$custoptionsv6}
 default-lease-time 7200;
 max-lease-time 86400;
@@ -1899,9 +1901,9 @@ function dhcpd_staticmap($domain_fallback = 'not.found', $ifconfig_details = nul
                 $domain = preg_split('/[ ;]+/', $domain)[0];
 
                 $entry = [
-                    'descr' => $host['descr'],
+                    'descr' => $host['descr'] ?? null,
                     'domain' => $domain,
-                    'hostname' => $host['hostname'],
+                    'hostname' => $host['hostname'] ?? null,
                     'interface' => $dhcpif,
                     $ipaddr => $host[$ipaddr],
                 ];

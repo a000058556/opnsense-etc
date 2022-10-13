@@ -86,9 +86,15 @@ function filter_rules_sort()
             return strnatcmp($a['interface'], $b['interface']);
         }
     });
-    /* strip the sequence numbers again */
+    /* strip the sequence numbers again, add uuid's where not available */
     for ($i = 0; isset($config['filter']['rule'][$i]); $i++) {
         unset($config['filter']['rule'][$i]['seq']);
+        if (
+            empty($config['filter']['rule'][$i]['@attributes'])
+            && empty($config['filter']['rule'][$i]['@attributes']['uuid'])
+        ) {
+            $config['filter']['rule'][$i]['@attributes'] = ['uuid' => generate_uuid()];
+        }
     }
 }
 
@@ -323,7 +329,7 @@ function filter_configure_sync($verbose = false, $load_aliases = true)
                 log_error(sprintf("Ignore down %s gateways : %s", $ipprotocol, implode(",", $down_gateways)));
             }
             $default_gw = $fw->getGateways()->getDefaultGW($down_gateways, $ipprotocol);
-            if ($default_gw !== null) {
+            if ($default_gw !== null && !empty($default_gw['gateway'])) {
                 system_default_route(
                     $default_gw['gateway'],
                     $ipprotocol,
@@ -422,7 +428,7 @@ function filter_configure_sync($verbose = false, $load_aliases = true)
         $limitrules .= "set limit frags {$config['system']['maximumfrags']}\n";
     }
 
-    if (isset($config['system']['lb_use_sticky']) && is_numeric($config['system']['srctrack']) && ($config['system']['srctrack'] > 0)) {
+    if (isset($config['system']['lb_use_sticky']) && is_numeric($config['system']['srctrack'] ?? null) && ($config['system']['srctrack'] > 0)) {
         $limitrules .= "set timeout src.track {$config['system']['srctrack']}\n";
     }
 
@@ -457,6 +463,7 @@ function filter_configure_sync($verbose = false, $load_aliases = true)
 
     if (!@file_put_contents('/tmp/rules.debug', $rules, LOCK_EX)) {
         syslog(LOG_ERR, 'ERROR: Could not write new rules!');
+        file_put_contents('/tmp/rules.error', gettext('ERROR: Could not write new rules!'));
 
         unlock($filterlck);
         closelog();
@@ -493,17 +500,13 @@ function filter_configure_sync($verbose = false, $load_aliases = true)
             }
         }
 
-        /* Brutal ugly hack but required -- PF is stuck, unwedge */
-        if (strstr("$rules_error[0]", "busy")) {
-            exec('/sbin/pfctl -d; /sbin/pfctl -e; /sbin/pfctl -f /tmp/rules.debug');
-            syslog(LOG_WARNING, 'PF was wedged/busy and has been reset.');
-            file_notice(gettext('PF was wedged/busy and has been reset.'));
-        } else {
-            exec('/sbin/pfctl -f /tmp/rules.debug.old 2>&1');
-        }
+        mwexec('/sbin/pfctl -f /tmp/rules.debug.old');
 
-        syslog(LOG_ERR, sprintf('There were error(s) loading the rules: %s%s', $rules_error[0], $config_line));
-        file_notice(sprintf(gettext('There were error(s) loading the rules: %s%s'), $rules_error[0], $config_line));
+        syslog(LOG_ERR, trim(sprintf('There were error(s) loading the rules: %s%s', $rules_error[0], $config_line)));
+        file_put_contents(
+            '/tmp/rules.error',
+            sprintf(gettext('There were error(s) loading the rules: %s%s'), $rules_error[0], $config_line)
+        );
 
         unlock($filterlck);
         closelog();
@@ -685,7 +688,10 @@ function filter_generate_aliases()
                 # the configuration.
                 $aliases .= "{$aliased['name']} = \"{ 0 <> 65535 }\"\n";
                 syslog(LOG_ERR, sprintf('URL port aliases types not supported [%s]', $aliased['name']));
-                file_notice(sprintf(gettext('URL port aliases types not supported [%s]'), $aliased['name']));
+                file_put_contents(
+                    '/tmp/rules.error',
+                    sprintf(gettext('URL port aliases types not supported [%s]'), $aliased['name'])
+                );
                 break;
             case "port":
                 $tmp_ports = implode(" ", filter_core_get_port_alias($aliased['name'], [], $aliasObject, $all_aliases));
@@ -913,4 +919,35 @@ function get_protocols()
         }
     }
     return $protocols;
+}
+
+/**
+ * Return array of possible TOS values
+ */
+function get_tos_values($blank_label = '')
+{
+    $ret = array(
+        '' => $blank_label,
+        'lowdelay' => gettext('lowdelay'),
+        'critical' => gettext('critical'),
+        'inetcontrol' => gettext('inetcontrol'),
+        'netcontrol' => gettext('netcontrol'),
+        'throughput' => gettext('throughput'),
+        'reliability' => gettext('reliability'),
+        'ef' => 'EF',
+    );
+
+    foreach (array(11, 12, 13, 21, 22, 23, 31, 32, 33, 41 ,42, 43) as $val) {
+        $ret["af$val"] = "AF$val";
+    }
+
+    foreach (range(0, 7) as $val) {
+        $ret["cs$val"] = "CS$val";
+    }
+
+    foreach (range(0, 255) as $val) {
+        $ret['0x' . dechex($val)] = sprintf('0x%02X', $val);
+    }
+
+    return $ret;
 }

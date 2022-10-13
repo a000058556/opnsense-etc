@@ -201,9 +201,13 @@ function system_resolvconf_generate($verbose = false)
     $search = array_merge($search, get_searchdomains());
 
     foreach (get_nameservers(null, true) as $dnsserver) {
-        $host = !empty($dnsserver['host']) ? $dnsserver['host'] : $dnsserver;
-        $resolvconf .= "nameserver {$host}\n";
-        $routes[] = $dnsserver;
+        if (isset($routes[$dnsserver['host']])) {
+            log_error("Duplicated DNS route ignored for {$dnsserver['host']} on {$dnsserver['interface']}");
+            continue;
+        }
+
+        $resolvconf .= "nameserver {$dnsserver['host']}\n";
+        $routes[$dnsserver['host']] = $dnsserver['gateway'];
     }
 
     if (count($search)) {
@@ -229,8 +233,8 @@ function system_resolvconf_generate($verbose = false)
     rename($tempfile, '/etc/resolv.conf');
 
     /* setup static routes for DNS servers as configured */
-    foreach ($routes as $route) {
-        system_host_route($route['host'], $route['gateway']);
+    foreach ($routes as $host => $gateway) {
+        system_host_route($host, $gateway);
     }
 
     if ($verbose) {
@@ -292,23 +296,23 @@ function get_zoneinfo()
 
 function get_searchdomains()
 {
-    $search_list = glob('/tmp/*_searchdomain*');
     $syscfg = config_read_array('system');
     $master_list = [];
+    $search_list = [];
 
-    if (!isset($syscfg['dnsallowoverride'])) {
-        /* do not return domains as required by configuration */
-        $search_list = [];
+    if (isset($syscfg['dnsallowoverride'])) {
+        /* return domains as required by configuration */
+        $list = trim(shell_exec('/usr/local/sbin/ifctl -sl'));
+        if (!empty($list)) {
+            $search_list = explode("\n", $list);
+        }
     }
 
-    if (is_array($search_list)) {
-        foreach ($search_list as $fdns) {
-            $contents = file($fdns, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if (!is_array($contents)) {
-                continue;
-            }
+    foreach ($search_list as $fdns) {
+        $contents = file($fdns, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (is_array($contents)) {
             foreach ($contents as $dns) {
-                if (!empty($dns) && is_hostname($dns)) {
+                if (is_fqdn($dns)) {
                     $master_list[] = $dns;
                 }
             }
@@ -323,22 +327,29 @@ function get_nameservers($interface = null, $with_gateway = false)
     global $config;
 
     $gateways = new \OPNsense\Routing\Gateways(legacy_interfaces_details());
-    $dns_lists = glob('/tmp/*_nameserver*');
     $syscfg = config_read_array('system');
     $exclude_interfaces = [];
     $master_list = [];
+    $dns_lists = [];
 
     if (!empty($interface)) {
         /* only acquire servers provided for this interface */
         $realif = get_real_interface($interface);
         $realifv6 = get_real_interface($interface, 'inet6');
-        $dns_lists = [
-            "/tmp/{$realif}_nameserver",
-            "/tmp/{$realifv6}_nameserverv6",
-        ];
-    } elseif (!isset($syscfg['dnsallowoverride'])) {
-        /* do not return dynamic servers as required by configuration */
-        $dns_lists = [];
+        $list = trim(shell_exec(exec_safe('/usr/local/sbin/ifctl -4nli %s', $realif)));
+        if (!empty($list)) {
+            $dns_lists[] = $list;
+        }
+        $list = trim(shell_exec(exec_safe('/usr/local/sbin/ifctl -6nli %s', $realifv6)));
+        if (!empty($list)) {
+            $dns_lists[] = $list;
+        }
+    } elseif (isset($syscfg['dnsallowoverride'])) {
+        /* return dynamic servers as required by configuration */
+        $list = trim(shell_exec('/usr/local/sbin/ifctl -nl'));
+        if (!empty($list)) {
+            $dns_lists = explode("\n", $list);
+        }
     }
 
     if (isset($syscfg['dnsallowoverride_exclude'])) {
@@ -353,8 +364,14 @@ function get_nameservers($interface = null, $with_gateway = false)
 
     foreach ($dns_lists as $fdns) {
         /* inspect dynamic servers registered in the system files */
-        $intf = explode('_', basename($fdns))[0];
-        if (in_array($intf, $exclude_interfaces)) {
+        $intf = [];
+
+        /* XXX this is ifctl logic we eventually need to pass down */
+        $intf[0] = preg_replace('/(_[^_]+|:.+)$/', '', basename($fdns));
+        $intf[1] = preg_replace('/^.+_/', '', basename($fdns));
+        $intf[1] = strpos($intf[1], 'v6') === false ? '4' : '6';
+
+        if (in_array($intf[0], $exclude_interfaces)) {
             continue;
         }
 
@@ -363,10 +380,12 @@ function get_nameservers($interface = null, $with_gateway = false)
             continue;
         }
 
-        /* router file is available for connectivity creating nameserver files */
-        $gw = trim(@file_get_contents(str_replace('_nameserver', '_router', $fdns)));
-        if (is_linklocal($gw) && strpos($gw, '%') === false) {
-            $gw .= "%{$intf}";
+        if ($with_gateway) {
+            /* router file is available for connectivity creating nameserver files */
+            $gw = trim(shell_exec(exec_safe('/usr/local/sbin/ifctl -%s -ri %s', [$intf[1], $intf[0]])));
+            if (is_linklocal($gw) && strpos($gw, '%') === false) {
+                $gw .= "%{$intf[0]}";
+            }
         }
 
         foreach ($contents as $dns) {
@@ -375,7 +394,12 @@ function get_nameservers($interface = null, $with_gateway = false)
             }
 
             if ($with_gateway) {
-                $master_list[] = ['host' => $dns, 'gateway' => $gw];
+                $master_list[] = [
+                    'host' => $dns,
+                    'gateway' => $gw,
+                    'interface' => convert_real_interface_to_friendly_interface_name($intf[0]),
+                    'source' => 'interface',
+                ];
             } else {
                 $master_list[] = $dns;
             }
@@ -414,15 +438,22 @@ function get_nameservers($interface = null, $with_gateway = false)
         }
 
         if ($with_gateway) {
-            $master_list[] = ['host' => $dns, 'gateway' => $gateway];
+            $master_list[] = [
+                'host' => $dns,
+                'gateway' => $gateway,
+                'interface' => $dnsif,
+                'source' => 'config',
+            ];
         } else {
             $master_list[] = $dns;
         }
     }
 
-    /* XXX check for overlapping host routes in gateway mode? */
+    if (!$with_gateway) {
+        $master_list = array_unique($master_list);
+    }
 
-    return array_unique($master_list, SORT_REGULAR);
+    return $master_list;
 }
 
 function system_hosts_generate($verbose = false)
@@ -448,8 +479,6 @@ function system_hosts_generate($verbose = false)
     }
 
     file_put_contents('/etc/hosts', $hosts);
-
-    plugins_configure('hosts');
 
     if ($verbose) {
         echo "done.\n";
@@ -555,7 +584,7 @@ function system_default_route($gateway, $family, $interface, $far = false)
     mwexecf('/sbin/route add -%s default %s', array($family, $gateway));
 }
 
-function system_routing_configure($verbose = false, $interface = '')
+function system_routing_configure($verbose = false, $interface = null, $monitor = true)
 {
     if ($verbose) {
         echo 'Setting up routes...';
@@ -590,9 +619,25 @@ function system_routing_configure($verbose = false, $interface = '')
     if ($verbose) {
         echo "done.\n";
     }
+
+    if ($monitor) {
+        $reloads = [];
+
+        if (!empty($interface)) {
+            foreach ($gateways->gatewaysIndexedByName(true) as $name => $gateway) {
+                if ($interface == $gateway['interface']) {
+                    $reloads[] = $name;
+                }
+            }
+        }
+
+        foreach (count($reloads) ? $reloads : [null] as $reload) {
+            plugins_configure('monitor', $verbose, [$reload]);
+        }
+    }
 }
 
-function system_staticroutes_configure($interface = '')
+function system_staticroutes_configure($interface = null)
 {
     $static_routes = get_staticroutes(false);
     if (count($static_routes)) {
@@ -720,6 +765,11 @@ function system_firmware_configure($verbose = false)
 
     /* rewrite the config via the defaults and possible arguments */
     mwexec('/usr/local/sbin/opnsense-update -sd ' . join(' ', $args));
+
+    /* clear the license file when no subscription key is set */
+    if (empty(trim(shell_exec('/usr/local/sbin/opnsense-update -K')))) {
+        @unlink('/usr/local/opnsense/version/core.license');
+    }
 
     if ($verbose) {
         echo "done.\n";

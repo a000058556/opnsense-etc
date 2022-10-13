@@ -309,9 +309,8 @@ if ($_SESSION['Username'] != 'root' && !$acl->isPageAccessible($_SESSION['Userna
  */
 function display_error_form($text)
 {
-    global $g;
-
     $themename = htmlspecialchars(get_current_theme());
+    $product = product::getInstance();
 
     ?><!doctype html>
 <html lang="en" class="no-js">
@@ -326,7 +325,7 @@ function display_error_form($text)
     <meta name="copyright" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
-    <title><?= gettext('Error') ?> | <?= $g['product_name'] ?></title>
+    <title><?= gettext('Error') ?> | <?= $product->name() ?></title>
 
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/css/main.css") ?>" rel="stylesheet">
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/images/favicon.png") ?>" rel="shortcut icon">
@@ -347,30 +346,11 @@ function display_error_form($text)
 
 function display_login_form($Login_Error)
 {
-    global $config, $g;
+    global $config;
 
     $themename = htmlspecialchars(get_current_theme());
+    $product = product::getInstance();
 
-    /*
-     * Check against locally configured IP addresses, which will catch when
-     * someone port-forwards WebGUI access from WAN to an internal IP on the
-     * router.
-     */
-    $local_ip = isAuthLocalIP($http_host);
-
-    if (isset($config['openvpn']['openvpn-server'])) {
-        foreach ($config['openvpn']['openvpn-server'] as $ovpns) {
-            if (is_ipaddrv4($http_host) && !empty($ovpns['tunnel_network']) && ip_in_subnet($http_host, $ovpns['tunnel_network'])) {
-                $local_ip = true;
-                break;
-            }
-
-            if (is_ipaddrv6($http_host) && !empty($ovpns['tunnel_networkv6']) && ip_in_subnet($http_host, $ovpns['tunnel_networkv6'])) {
-                $local_ip = true;
-                break;
-            }
-        }
-    }
     setcookie("cookie_test", bin2hex(random_bytes(16)), time() + 3600, '/', null, $config['system']['webgui']['protocol'] == "https", true);
     $have_cookies = isset($_COOKIE["cookie_test"]);
     ?><!doctype html>
@@ -385,7 +365,7 @@ function display_login_form($Login_Error)
     <meta name="copyright" content="" />
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 
-    <title><?= gettext('Login') ?> | <?= $g['product_name'] ?></title>
+    <title><?= gettext('Login') ?> | <?= $product->name() ?></title>
 
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/css/main.css") ?>" rel="stylesheet">
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/images/favicon.png") ?>" rel="shortcut icon">
@@ -398,72 +378,55 @@ function display_login_form($Login_Error)
 
   </head>
   <body class="page-login">
-  <div class="page-header min-vh-75">
-    <div class="container">
-        <?php
-        if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
-            print_info_box(sprintf(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. %sIf you did not setup this forwarding, you may be the target of a man-in-the-middle attack."), '<br /><br />'));
-        }
-        ?>
-        <div class="row">
-            <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
-                <main class="login-modal-container">
-                <header class="login-modal-head" style="height:50px;">
-                    <div class="navbar-brand">
-                <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")) : ?>
-                    <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" height="30" alt="logo" />
-                <?php else : ?>
-                    <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
-                <?php endif ?>
-                    </div>
-                </header>
 
-                <div class="login-modal-content">
-                    <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
+  <div class="container">
+    <main class="login-modal-container">
+      <header class="login-modal-head" style="height:50px;">
+        <div class="navbar-brand">
+    <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")) : ?>
+          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" height="30" alt="logo" />
+    <?php else : ?>
+          <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
+    <?php endif ?>
+        </div>
+      </header>
 
-                        <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off">
+      <div class="login-modal-content">
+        <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
-                    <div class="form-group">
-                    <label for="usernamefld"><?=gettext("Username:"); ?></label>
-                    <input id="usernamefld" type="text" name="usernamefld" class="form-control user" tabindex="1" autofocus="autofocus" autocapitalize="off" autocorrect="off" />
-                    </div>
+            <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off">
 
-                    <div class="form-group">
-                    <label for="passwordfld"><?=gettext("Password:"); ?></label>
-                    <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
-                    </div>
-
-                    <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
-
-                </form>
-
-                <?php if (!$have_cookies && isset($_POST['login'])) : ?>
-                    <br /><br />
-                    <span class="text-danger">
-                        <?= gettext("Your browser must support cookies to login."); ?>
-                    </span>
-                <?php endif; ?>
-
-                    </div>
-                </main>
-            </div>
-            <div class="col-sm-6">
-                <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
-                    <img src="/ui/themes/opnsense/build/images/bg-01.jpg">
-                    <!-- <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" >
-                    </div> -->
-                </div>
-            </div>
+        <div class="form-group">
+          <label for="usernamefld"><?=gettext("Username:"); ?></label>
+          <input id="usernamefld" type="text" name="usernamefld" class="form-control user" tabindex="1" autofocus="autofocus" autocapitalize="off" autocorrect="off" />
         </div>
 
-        <div class="login-foot text-center">
-        <a target="_blank" href="<?=$g['product_website']?>"><?=$g['product_name']?></a> (c) <?=$g['product_copyright_years']?>
-        <a target="_blank" href="<?=$g['product_copyright_url']?>"><?=$g['product_copyright_owner']?></a>
+        <div class="form-group">
+          <label for="passwordfld"><?=gettext("Password:"); ?></label>
+          <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
         </div>
+
+        <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
+
+      </form>
+
+      <?php if (!$have_cookies && isset($_POST['login'])) : ?>
+        <br /><br />
+        <span class="text-danger">
+            <?= gettext("Your browser must support cookies to login."); ?>
+        </span>
+      <?php endif; ?>
+
+          </div>
+
+      </main>
+      <div class="login-foot text-center">
+        <a target="_blank" href="<?= $product->website() ?>"><?= $product->name() ?></a> (c) <?= $product->copyright_years() ?>
+        <a target="_blank" href="<?= $product->copyright_url() ?>"><?= $product->copyright_owner() ?></a>
+      </div>
 
     </div>
-  </div>
 
-  </body>
-</html>
+    </body>
+  </html>
 <?php }

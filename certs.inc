@@ -27,34 +27,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once('phpseclib/File/X509.php');
-require_once('phpseclib/File/ASN1.php');
-require_once('phpseclib/Math/BigInteger.php');
-require_once('phpseclib/File/ASN1/Element.php');
-require_once('phpseclib/Crypt/RSA.php');
-require_once('phpseclib/Crypt/Hash.php');
-
-define("CERT_CRL_STATUS_NOSTATUS", -1);
-define("CERT_CRL_STATUS_UNSPECIFIED", 0);
-define("CERT_CRL_STATUS_KEYCOMPROMISE", 1);
-define("CERT_CRL_STATUS_CACOMPROMISE", 2);
-define("CERT_CRL_STATUS_AFFILIATIONCHANGED", 3);
-define("CERT_CRL_STATUS_SUPERSEDED", 4);
-define("CERT_CRL_STATUS_CESSATIONOFOPERATION", 5);
-define("CERT_CRL_STATUS_CERTIFICATEHOLD", 6);
-
-function crl_status_code()
+function phpseclib_autoload($namespace, $dir)
 {
-    /* Array index 0 is a description, index 1 is the key used by phpseclib */
-    return array(
-        CERT_CRL_STATUS_NOSTATUS              => ["No Status (default)", "unused"],
-        CERT_CRL_STATUS_UNSPECIFIED           => ["Unspecified", "unused"],
-        CERT_CRL_STATUS_KEYCOMPROMISE         => ["Key Compromise", "keyCompromise"],
-        CERT_CRL_STATUS_CACOMPROMISE          => ["CA Compromise", "cACompromise"],
-        CERT_CRL_STATUS_AFFILIATIONCHANGED    => ["Affiliation Changed", "affiliationChanged"],
-        CERT_CRL_STATUS_SUPERSEDED            => ["Superseded", "superseded"],
-        CERT_CRL_STATUS_CESSATIONOFOPERATION  => ["Cessation of Operation", "cessationOfOperation"],
-        CERT_CRL_STATUS_CERTIFICATEHOLD       => ["Certificate Hold", "certificateHold"]
+    $split = '\\';
+    $ns = trim($namespace, DIRECTORY_SEPARATOR . $split);
+
+    return spl_autoload_register(
+        function ($class) use ($ns, $dir, $split) {
+            $prefix = $ns . $split;
+            $base_dir = $dir . DIRECTORY_SEPARATOR;
+            $len = strlen($prefix);
+            if (strncmp($prefix, $class, $len)) {
+                return;
+            }
+
+            $relative_class = substr($class, $len);
+
+            $file = $base_dir .
+                str_replace($split, DIRECTORY_SEPARATOR, $relative_class) .
+                '.php';
+
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        }
     );
 }
 
@@ -598,88 +594,6 @@ function cert_in_use($certref)
       is_ipsec_cert($certref));
 }
 
-function crl_update(&$crl)
-{
-    $ca =& lookup_ca($crl['caref']);
-    if (!$ca) {
-        return false;
-    }
-    // If we have text but no certs, it was imported and cannot be updated.
-    if (!is_crl_internal($crl)) {
-        return false;
-    }
-
-    $crl['serial']++;
-    $ca_str_crt = base64_decode($ca['crt']);
-    $ca_str_key = base64_decode($ca['prv']);
-
-    /* Load in the CA's cert */
-    $ca_cert = new \phpseclib\File\X509();
-    $ca_cert->loadX509($ca_str_crt);
-    /* get the private key to sign the new (updated) CRL */
-    $ca_key = new \phpseclib\Crypt\RSA();
-    $ca_key->loadKey($ca_str_key);
-    $ca_cert->setPrivateKey($ca_key);
-
-    /* Load the CA for later signature validation */
-    $x509_crl = new \phpseclib\File\X509();
-    $x509_crl->loadCA($ca_str_crt);
-
-    /*
-     * create empty CRL. A quirk with phpseclib is that in order to correctly sign
-     * a new CRL, a CA must be loaded using a separate X509 container, which is passed
-     * to signCRL(). However, to validate the resulting signature, the original X509
-     * CRL container must load the same CA using loadCA() with a direct reference
-     * to the CA's public cert.
-     */
-    $x509_crl->loadCRL($x509_crl->saveCRL($x509_crl->signCRL($ca_cert, $x509_crl)));
-
-    /* Now validate the CRL to see if everything went well */
-    if (!$x509_crl->validateSignature(false)) {
-        return false;
-    }
-
-    if (is_array($crl['cert']) && (count($crl['cert']) > 0)) {
-        foreach ($crl['cert'] as $cert) {
-            /* load the certificate in an x509 container to get its serial number and validate its signature */
-            $x509_cert = new \phpseclib\File\X509();
-            $x509_cert->loadCA($ca_str_crt);
-            $raw_cert = $x509_cert->loadX509(base64_decode($cert['crt']));
-            if (!$x509_cert->validateSignature(false)) {
-                return false;
-            }
-            /* Get serial number of cert */
-            $sn = $raw_cert['tbsCertificate']['serialNumber']->toString();
-            $x509_crl->setRevokedCertificateExtension($sn, 'id-ce-cRLReasons', crl_status_code()[$cert["reason"]][1]);
-        }
-    }
-    $x509_crl->setSerialNumber($crl['serial'], 10);
-    $x509_crl->setEndDate('+' . $crl['lifetime'] . ' days');
-    $new_crl = $x509_crl->signCRL($ca_cert, $x509_crl);
-    $crl_text = $x509_crl->saveCRL($new_crl);
-
-    /* Update the CRL */
-    $crl['text'] = base64_encode($crl_text);
-    return true;
-}
-
-function cert_revoke($cert, &$crl, $reason = CERT_CRL_STATUS_UNSPECIFIED)
-{
-    if (is_cert_revoked($cert, $crl['refid'])) {
-        return true;
-    }
-    // If we have text but no certs, it was imported and cannot be updated.
-    if (!is_crl_internal($crl)) {
-        return false;
-    }
-    $cert["reason"] = $reason;
-    $cert["revoke_time"] = time();
-    $crl["cert"][] = $cert;
-    crl_update($crl);
-    return true;
-}
-
-
 /* Compare two certificates to see if they match. */
 function cert_compare($cert1, $cert2)
 {
@@ -747,10 +661,9 @@ function is_openvpn_server_crl($crlref)
     return false;
 }
 
-
 function is_crl_internal($crl)
 {
-    return (!(!empty($crl['text']) && empty($crl['cert'])) || ($crl["crlmethod"] == "internal"));
+    return $crl["crlmethod"] ?? '' == "internal";
 }
 
 function cert_get_cn($crt, $isref = false)
