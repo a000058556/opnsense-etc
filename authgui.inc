@@ -398,71 +398,72 @@ function display_login_form($Login_Error)
 
   </head>
   <body class="page-login">
+  <div class="page-header min-vh-75">
+    <div class="container">
+        <?php
+        if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
+            print_info_box(sprintf(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. %sIf you did not setup this forwarding, you may be the target of a man-in-the-middle attack."), '<br /><br />'));
+        }
+        ?>
+        <div class="row">
+            <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
+                <main class="login-modal-container">
+                <header class="login-modal-head" style="height:50px;">
+                    <div class="navbar-brand">
+                <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")) : ?>
+                    <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" height="30" alt="logo" />
+                <?php else : ?>
+                    <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
+                <?php endif ?>
+                    </div>
+                </header>
 
-  <div class="container">
-    <?php
-    if (is_ipaddr($http_host) && !$local_ip && !isset($config['system']['webgui']['nohttpreferercheck'])) {
-        print_info_box(sprintf(gettext("You are accessing this router by an IP address not configured locally, which may be forwarded by NAT or other means. %sIf you did not setup this forwarding, you may be the target of a man-in-the-middle attack."), '<br /><br />'));
-    }
-    ?>
-    <div class="row">
-        <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
-            <main class="login-modal-container">
-            <header class="login-modal-head" style="height:50px;">
-                <div class="navbar-brand">
-            <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")) : ?>
-                <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" height="30" alt="logo" />
-            <?php else : ?>
-                <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
-            <?php endif ?>
-                </div>
-            </header>
+                <div class="login-modal-content">
+                    <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
 
-            <div class="login-modal-content">
-                <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
+                        <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off">
 
-                    <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off">
+                    <div class="form-group">
+                    <label for="usernamefld"><?=gettext("Username:"); ?></label>
+                    <input id="usernamefld" type="text" name="usernamefld" class="form-control user" tabindex="1" autofocus="autofocus" autocapitalize="off" autocorrect="off" />
+                    </div>
 
-                <div class="form-group">
-                <label for="usernamefld"><?=gettext("Username:"); ?></label>
-                <input id="usernamefld" type="text" name="usernamefld" class="form-control user" tabindex="1" autofocus="autofocus" autocapitalize="off" autocorrect="off" />
-                </div>
+                    <div class="form-group">
+                    <label for="passwordfld"><?=gettext("Password:"); ?></label>
+                    <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
+                    </div>
 
-                <div class="form-group">
-                <label for="passwordfld"><?=gettext("Password:"); ?></label>
-                <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
-                </div>
+                    <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
 
-                <button type="submit" name="login" value="1" class="btn btn-primary pull-right"><?=gettext("Login"); ?></button>
+                </form>
 
-            </form>
+                <?php if (!$have_cookies && isset($_POST['login'])) : ?>
+                    <br /><br />
+                    <span class="text-danger">
+                        <?= gettext("Your browser must support cookies to login."); ?>
+                    </span>
+                <?php endif; ?>
 
-            <?php if (!$have_cookies && isset($_POST['login'])) : ?>
-                <br /><br />
-                <span class="text-danger">
-                    <?= gettext("Your browser must support cookies to login."); ?>
-                </span>
-            <?php endif; ?>
-
-                </div>
-            </main>
-        </div>
-        <div class="col-sm-6">
-            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
-                <div class="bg-01-img oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" >
-                    <!-- <img src="/ui/themes/opnsense/build/images/bg-01.jpg" class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6"> -->
+                    </div>
+                </main>
+            </div>
+            <div class="col-sm-6">
+                <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
+                    <img src="/ui/themes/opnsense/build/images/bg-01.jpg">
+                    <!-- <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" >
+                    </div> -->
                 </div>
             </div>
         </div>
+
+        <div class="login-foot text-center">
+        <a target="_blank" href="<?=$g['product_website']?>"><?=$g['product_name']?></a> (c) <?=$g['product_copyright_years']?>
+        <a target="_blank" href="<?=$g['product_copyright_url']?>"><?=$g['product_copyright_owner']?></a>
+        </div>
+
     </div>
+  </div>
 
-    <div class="login-foot text-center">
-    <a target="_blank" href="<?=$g['product_website']?>"><?=$g['product_name']?></a> (c) <?=$g['product_copyright_years']?>
-    <a target="_blank" href="<?=$g['product_copyright_url']?>"><?=$g['product_copyright_owner']?></a>
-    </div>
-
-   </div>
-
-   </body>
+  </body>
 </html>
 <?php }
