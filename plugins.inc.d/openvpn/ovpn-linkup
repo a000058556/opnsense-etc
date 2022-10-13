@@ -1,0 +1,26 @@
+#!/bin/sh
+
+if [ -n "${route_vpn_gateway}" ]; then
+	/bin/echo ${route_vpn_gateway} > /tmp/${1}_router
+elif [ -n "${ifconfig_remote}" ]; then
+	/bin/echo ${ifconfig_remote} > /tmp/${1}_router
+elif [ -n "${ifconfig_local}" ]; then
+	# XXX: We can't reliably determine the tunnels endpoint, other than parsing ifconfig.
+	#      Use our standard parser to request the tunnels other end. Eventually we could pass this to configd if
+	#      needed, but openvpn has elevated rights anyway at the moment.
+	/usr/local/etc/inc/plugins.inc.d/openvpn/tunnel_endpoint.php ${1} > /tmp/${1}_router
+elif [ "${dev_type}" = "tun" -a -n "${5}" ]; then
+	/bin/echo ${5} > /tmp/${1}_router
+fi
+
+if [ -n "${route_ipv6_gateway_1}" ]; then
+	/bin/echo ${route_ipv6_gateway_1} > /tmp/${1}_routerv6
+elif [ -n "${ifconfig_ipv6_remote}" ]; then
+	/bin/echo ${ifconfig_ipv6_remote} > /tmp/${1}_routerv6
+elif [ -n "${ifconfig_ipv6_local}" ]; then
+	/bin/echo ${ifconfig_ipv6_local} > /tmp/${1}_routerv6
+fi
+
+/usr/local/sbin/configctl -d interface newip ${1}
+
+exit 0
