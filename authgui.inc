@@ -428,15 +428,14 @@ function display_login_form($Login_Error)
                             </div>
                         </div>
                     </div>
-
-                    <div class="login-foot text-center">
-                    <a target="_blank" href="<?= $product->website() ?>"><?= $product->name() ?></a> (c) <?= $product->copyright_years() ?>
-                    <a target="_blank" href="<?= $product->copyright_url() ?>"><?= $product->copyright_owner() ?></a>
-                    </div>
                 </div>
             </div>
         </section>
     </main>
+    <div class="login-foot text-center">
+        <a target="_blank" href="<?= $product->website() ?>"><?= $product->name() ?></a> (c) <?= $product->copyright_years() ?>
+        <a target="_blank" href="<?= $product->copyright_url() ?>"><?= $product->copyright_owner() ?></a>
+    </div>
   </body>
 </html>
 
