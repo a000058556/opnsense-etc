@@ -378,8 +378,8 @@ function display_login_form($Login_Error)
 
   </head>
   <body class="page-login">
-    <div class="page-header min-vh-75">
-        <div class="container">
+    <div class="page-header min-vh-75 .page-header-login">
+        <div class="container" style="width: 100%;">
             <div class="row" style="display: flex; flex-wrap: wrap;">
                 <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
                     <main class="login-modal-container">
