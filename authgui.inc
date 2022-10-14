@@ -384,7 +384,7 @@ function display_login_form($Login_Error)
                 <div class="container" style="width: 100%; z-index: 1;">
                     <div class="row" style="display: flex; flex-wrap: wrap;">
                         <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
-                            <main class="login-modal-container">
+                            <main class="login-modal-container card card-plain mt-8">
                             <header class="login-modal-head" style="height:50px;">
                                 <div class="navbar-brand">
                             <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")) : ?>
