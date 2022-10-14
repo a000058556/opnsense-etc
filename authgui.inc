@@ -384,16 +384,18 @@ function display_login_form($Login_Error)
                 <div class="container" style="width: 100%; z-index: 1;">
                     <div class="row" style="display: flex; flex-wrap: wrap;">
                         <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
-                            <main class="login-modal-container card card-plain mt-8">
+                            <main class="login-modal-container card card-plain mt-12">
                             <header class="login-modal-head card-header pb-0 text-left bg-transparent">
                                 <h3 class="login-h3 font-weight-bolder text-info text-gradient">Welcome OPNsense</h3>
                                 <p class="mb-0">Enter your name and password to sign in</p>
                             </header>
 
                             <div class="login-modal-content card-body">
-                                <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?></div><br />
+                                <div id="inputerrors" class="text-danger"><?= !empty($Login_Error) ? $Login_Error : '&nbsp;' ?>
+                                </div>
+                                <br />
 
-                                    <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off">
+                            <form class="clearfix" id="iform" name="iform" method="post" autocomplete="off">
 
                                 <div class="form-group">
                                 <label for="usernamefld"><?=gettext("Username:"); ?></label>
@@ -404,17 +406,19 @@ function display_login_form($Login_Error)
                                 <label for="passwordfld"><?=gettext("Password:"); ?></label>
                                 <input id="passwordfld" type="password" name="passwordfld" class="form-control pwd" tabindex="2" />
                                 </div>
+
                                 <div class="text-center">
                                     <button type="submit" name="login" value="1" class="btn bg-gradient-info w-100 mt-4 mb-0"><?=gettext("Login"); ?></button>
                                 </div>
+
                             </form>
 
-                            <?php if (!$have_cookies && isset($_POST['login'])) : ?>
-                                <br /><br />
-                                <span class="text-danger">
-                                    <?= gettext("Your browser must support cookies to login."); ?>
-                                </span>
-                            <?php endif; ?>
+                                <?php if (!$have_cookies && isset($_POST['login'])) : ?>
+                                    <br /><br />
+                                    <span class="text-danger">
+                                        <?= gettext("Your browser must support cookies to login."); ?>
+                                    </span>
+                                <?php endif; ?>
 
                                 </div>
 
