@@ -386,13 +386,6 @@ function display_login_form($Login_Error)
                         <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
                             <main class="login-modal-container card card-plain mt-8">
                             <header class="login-modal-head card-header pb-0 text-left bg-transparent">
-                                <div class="navbar-brand">
-                            <?php if (file_exists("/usr/local/opnsense/www/themes/{$themename}/build/images/default-logo.svg")) : ?>
-                                <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.svg") ?>" height="30" alt="logo" />
-                            <?php else : ?>
-                                <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
-                            <?php endif ?>
-                                </div>
                                 <h3 class="login-h3 font-weight-bolder text-info text-gradient">Welcome OPNsense</h3>
                                 <p class="mb-0">Enter your name and password to sign in</p>
                             </header>
