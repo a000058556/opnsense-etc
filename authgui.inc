@@ -377,9 +377,10 @@ function display_login_form($Login_Error)
     <?php endif ?>
 
   </head>
-  <body class="page-login">
+  <body class="page-login" style="font-weight: 400; line-height: 1.6;">
+  <main class="main-content mt-0 ps">
     <div class="page-header min-vh-75 page-header-login">
-        <div class="container" style="width: 100%;">
+        <div class="container" style="width: 100%; z-index: 1;">
             <div class="row" style="display: flex; flex-wrap: wrap;">
                 <div class="col-xl-4 col-lg-5 col-sm-6 d-flex flex-column mx-auto">
                     <main class="login-modal-container">
@@ -438,6 +439,7 @@ function display_login_form($Login_Error)
             </div>
         </div>
     </div>
+  </main>
   </body>
 </html>
 
