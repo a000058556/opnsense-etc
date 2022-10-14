@@ -393,7 +393,7 @@ function display_login_form($Login_Error)
                                 <img src="<?= cache_safe("/ui/themes/{$themename}/build/images/default-logo.png") ?>" height="30" alt="logo" />
                             <?php endif ?>
                                 </div>
-                                <h3 class="font-weight-bolder text-info text-gradient">Welcome back</h3>
+                                <h3 class="login-h3 font-weight-bolder text-info text-gradient">Welcome OPNsense</h3>
                                 <p class="mb-0">Enter your name and password to sign in</p>
                             </header>
 
