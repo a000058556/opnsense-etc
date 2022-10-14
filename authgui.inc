@@ -425,7 +425,7 @@ function display_login_form($Login_Error)
                             </main>
                         </div>
                         <div class="col-sm-6">
-                            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-n8">
+                            <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-4">
                                 <img src="/ui/themes/opnsense/build/images/bg-01.jpg" width="900px">
                                 <!-- <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" >
                                 </div> -->
