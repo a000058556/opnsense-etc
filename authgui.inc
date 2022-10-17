@@ -445,9 +445,7 @@ function display_login_form($Login_Error)
     
     <!-- 粒子特效 -->
     <script>
-        window.
-        onload
-        = function() {
+        $(function() {
             Particles.init
         ({
             // normal options
@@ -480,7 +478,7 @@ function display_login_form($Login_Error)
             }
             ]
             });
-        };
+        });
     </script>
     <!-- 粒子特效封包cdn -->
     <script src="/ui/themes/opnsense/build/js/particles.min.js"></script>
