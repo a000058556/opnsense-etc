@@ -459,14 +459,14 @@ function display_login_form($Login_Error)
                 breakpoint: 768,
                 options: {
                 color: ["#2152FF", "#21D4FD", "#ffffff"],
-                maxParticles: 200,
+                maxParticles: 150,
                 connectParticles: false
                 }
             },{
                 breakpoint: 425,
                 options: {
                 color: ["#2152FF", "#21D4FD", "#ffffff"],
-                maxParticles: 100,
+                maxParticles: 50,
                 connectParticles: true
                 }
             },{
