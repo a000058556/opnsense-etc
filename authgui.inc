@@ -466,7 +466,7 @@ function display_login_form($Login_Error)
                 breakpoint: 768,
                 options: {
                 color: ["#2152FF", "#21D4FD", "#ffffff"],
-                maxParticles: 50,
+                maxParticles: 10,
                 connectParticles: false
                 }
             },{
