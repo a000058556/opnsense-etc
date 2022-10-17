@@ -331,10 +331,12 @@ function display_error_form($text)
     <link href="<?= cache_safe("/ui/themes/{$themename}/build/images/favicon.png") ?>" rel="shortcut icon">
 
     <script src="/ui/js/jquery-3.5.1.min.js"></script>
+    <!-- 粒子特效封包cdn -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
 
   </head>
   <body class="page-login">
-    <div id=container">
+    <div id="container">
       <p>&nbsp;</p>
       <p style="text-align: center;">
         <a href="/index.php?logout"><?= $text ?></a>
@@ -482,8 +484,7 @@ function display_login_form($Login_Error)
             });
         };
     </script>
-    <!-- 粒子特效封包cdn -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
+    
   </body>
 </html>
 
