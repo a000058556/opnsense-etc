@@ -427,10 +427,10 @@ function display_login_form($Login_Error)
                         <div class="col-sm-6">
                             <div class="oblique position-absolute top-0 h-100 d-md-block d-none me-4">
                                 <canvas class="background-effect">
-                                    <img src="/ui/themes/opnsense/build/images/bg-01.jpg">
                                     <!-- <div class="oblique-image bg-cover position-absolute fixed-top ms-auto h-100 z-index-0 ms-n6" >
                                         </div> -->
                                 </canvas>
+                                <img src="/ui/themes/opnsense/build/images/bg-01.jpg">
                             </div>
                         </div>
                     </div>
@@ -458,21 +458,21 @@ function display_login_form($Login_Error)
                 // 斷點
                 breakpoint: 768,
                 options: {
-                color: ["#2152FF", "#21D4FD", "#000000"],
+                color: ["#2152FF", "#21D4FD", "#ffffff"],
                 maxParticles: 200,
                 connectParticles: false
                 }
             },{
                 breakpoint: 425,
                 options: {
-                color: ["#2152FF", "#21D4FD", "#000000"],
+                color: ["#2152FF", "#21D4FD", "#ffffff"],
                 maxParticles: 100,
                 connectParticles: true
                 }
             },{
                 breakpoint: 320,
                 options: {
-                color: ["#2152FF", "#21D4FD", "#000000"],
+                color: ["#2152FF", "#21D4FD", "#ffffff"],
                 maxParticles: 0,
                 }
             }
