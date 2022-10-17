@@ -456,21 +456,21 @@ function display_login_form($Login_Error)
             responsive: [
             {
                 // 斷點
-                breakpoint: 768,
+                breakpoint: 986,
                 options: {
                 color: ["#2152FF", "#21D4FD", "#ffffff"],
                 maxParticles: 150,
                 connectParticles: false
                 }
             },{
-                breakpoint: 425,
+                breakpoint: 768,
                 options: {
                 color: ["#2152FF", "#21D4FD", "#ffffff"],
                 maxParticles: 50,
                 connectParticles: true
                 }
             },{
-                breakpoint: 320,
+                breakpoint: 425,
                 options: {
                 color: ["#2152FF", "#21D4FD", "#ffffff"],
                 maxParticles: 0,
