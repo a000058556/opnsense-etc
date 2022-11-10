@@ -992,6 +992,7 @@ function system_cron_configure($verbose = false)
         flush();
     }
 
+    // plugins_cron()調用於plugins.inc
     foreach (plugins_cron() as $cron_plugin) {
         /*
          * We are stuffing jobs inside 'autocron' to be able to
@@ -1028,7 +1029,7 @@ function system_cron_configure($verbose = false)
 
     configd_run('template reload OPNsense/Cron');
 
-    mwexec('/etc/rc.d/cron restart');
+    mwexec('/etc/rc.d/cron restart'); // 調用util.inc.php的mwexec()執行cmd指令重啟cron
 
     if ($verbose) {
         echo "done.\n";

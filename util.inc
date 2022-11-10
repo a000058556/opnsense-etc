@@ -919,8 +919,8 @@ function mwexec($command, $mute = false)
     $oarr = array();
     $retval = 0;
 
-    $garbage = exec("{$command} 2>&1", $oarr, $retval);
-    unset($garbage);
+    $garbage = exec("{$command} 2>&1", $oarr, $retval); // 執行cmd指令
+    unset($garbage); // 清除變量
 
     if ($retval != 0 && $mute == false) {
         $output = implode(' ', $oarr);
