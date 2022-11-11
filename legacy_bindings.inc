@@ -71,11 +71,18 @@ function configdp_run($cmd, $params = array(), $detach = false)
  */
 function legacy_html_escape_form_data(&$settings)
 {
+    // 若傳入為array
     if (is_array($settings)) {
+        // 使用foreach拆為Key => Value
         foreach ($settings as $dataKey => &$dataValue) {
+            // 當Value還是array再拆一次
             if (is_array($dataValue)) {
                 legacy_html_escape_form_data($dataValue);
             } else {
+                // htmlspecialchars() 把預定義的字符轉換為HTML實體
+                // htmlspecialchars(string,flags,character-set,double_encode)
+                // flags > 規定如何編碼單引號和雙引號(ENT_QUOTES - 編碼雙引號和單引號)
+                // flags > 規定使用的文檔類型(ENT_HTML401 - 默認。作為HTML 4.01 處理代碼)
                 $settings[$dataKey] = htmlspecialchars($dataValue, ENT_QUOTES | ENT_HTML401);
             }
         }

@@ -227,8 +227,9 @@ function &config_read_array()
     global $config;
 
     $current = &$config;
-
+    // func_get_args()函數帶入的資料 例如:刪除資料時帶入['filter', 'rule']
     foreach (func_get_args() as $key) {
+        // $current[$key]若不存在 或 不是array ， $current[$key]=array();
         if (!isset($current[$key]) || !is_array($current[$key])) {
             $current[$key] = array();
         }
