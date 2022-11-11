@@ -235,7 +235,7 @@ function &config_read_array()
         }
         $current = &$current[$key];
     }
-
+    // 回傳取得的config_array資料
     return $current;
 }
 
