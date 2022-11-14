@@ -545,18 +545,22 @@ function is_ipaddr($ipaddr)
         return true;
     }
     return false;
+    // 若非IPv4 or IPv6 address 回傳false
 }
 
 /* returns true if $ipaddr is a valid IPv6 address */
 function is_ipaddrv6($ipaddr)
 {
+    // 若不是string or 是空值
     if (!is_string($ipaddr) || empty($ipaddr)) {
         return false;
     }
+    // strstr(被搜尋的string，搜尋的string) 區分大小寫，若沒有則回傳false，有則回傳包含%後面的剩餘string
     if (strstr($ipaddr, "%") && is_linklocal($ipaddr)) {
         $tmpip = explode("%", $ipaddr);
         $ipaddr = $tmpip[0];
     }
+    // strpos()在字符串中第一次出现的位置，沒有找到為false
     if (strpos($ipaddr, ":") === false) {
         return false;
     } elseif (strpos($ipaddr, "/") !== false) {
@@ -572,7 +576,8 @@ function is_ipaddrv4($ipaddr)
     if (!is_string($ipaddr) || empty($ipaddr)) {
         return false;
     }
-
+    // ip2long() 將IPV4字符串轉換成長整型數字
+    // 例如: 輸入 130.211.251.29 轉為 2194930461
     $ip_long = ip2long($ipaddr);
     $ip_reverse = long2ip32($ip_long);
 
@@ -586,14 +591,22 @@ function is_ipaddrv4($ipaddr)
 /* returns true if $ipaddr is a valid linklocal address (inside fe80::/10) */
 function is_linklocal($ipaddr)
 {
+    // preg_match(條件,string)用於執行一個正則表達式比對
+    // 符合的驗證字串範例 fe80::/10
+    // ^ 匹配搜索字符串開始位置
+    // /正則表達式/i 為此字串搜尋不分大小寫
     return preg_match('/^fe[89ab][0-9a-f]:/i', $ipaddr);
 }
 
 /* returns true if $ipaddr is a valid literal IPv6 address */
 function is_literalipaddrv6($ipaddr)
 {
+    // 用\標記下個符號為特殊字符，讓原功能不作用
+    // () 標記子表達式的開始和結尾，可以保存子表達式
+    // + 一次或多次匹配前面的字符或子表達式
+    // 正規表達說明:http://c.biancheng.net/view/7569.html
     if (preg_match('/\[([0-9a-f:]+)\]/i', $ipaddr, $match)) {
-        $ipaddr = $match[1];
+        $ipaddr = $match[1]; //第一個捕獲子組匹配到的string， $match[0] = 全部
     } else {
         return false;
     }
@@ -603,6 +616,7 @@ function is_literalipaddrv6($ipaddr)
 function is_ipaddrwithport($ipport)
 {
     $parts = explode(":", $ipport);
+    // array_pop() 函數刪除array最後一個元素
     $port = array_pop($parts);
     if (count($parts) == 1) {
         return is_ipaddrv4($parts[0]) && is_port($port);
