@@ -171,9 +171,29 @@ function write_config($desc = '', $backup = true)
 {
     global $config;
 
+    // Remote Address定義：(https://ithelp.ithome.com.tw/articles/10216399)
+    // 最後的來源 IP 位址，它來自於 TCP 協定的來源 IP，無法以 HTTP Header 方式修改，在不被應用程式修改前提下，此值可信任。
+    // 但因「最後來源 IP」，也就是說如果應用程式在 Load Balancer、Reverse Proxy 或使用 Cloudflare 之類的服務，此值僅能取得設備的 IP。
+    
+    // 狀況一：在 Application 伺服器上，利用 $_SERVER['REMOTE_ADDR'] 會拿到 1.2.3.4，這是我們要的
+    // |---------|       |-------------|
+    // | Client  |======>| Application |
+    // | 1.2.3.4 |       | 11.11.11.11 |
+    // |---------|       |-------------|
+    
+    // 狀況二：在 Application 伺服器上，利用 $_SERVER['REMOTE_ADDR'] 會拿到 22.22.22.22，這不是我們要的
+    // |---------|       |---------------|        |-------------|
+    // | Client  |======>| Reverse Proxy | ======>| Application |
+    // | 1.2.3.4 |       | 22.22.22.22   |        | 11.11.11.11 |
+    // |---------|       |---------------|        |-------------|
+
+    // 當ip不為空值時
     if (!empty($_SERVER['REMOTE_ADDR'])) {
+        // 當$_SESSION['Username']不為空值並!= 'root'時
         if (!empty($_SESSION['Username']) && ($_SESSION['Username'] != 'root')) {
+            // 使用$_SESSION['Username']從$config取得使用者資料，從auth.inc調用
             $user = getUserEntry($_SESSION['Username']);
+            // 當$user是array and 當權限中有"user-config-readonly"時，回傳系統錯誤
             if (is_array($user) && userHasPrivilege($user, "user-config-readonly")) {
                 // okay, it's not very nice to check permissions here, but let's make it explicit while we do...
                 syslog(LOG_ERR, "WARNING: User {$_SESSION['Username']} may not write config (user-config-readonly set)");

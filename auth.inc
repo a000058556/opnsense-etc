@@ -71,15 +71,20 @@ function isAuthLocalIP($http_host)
     return $address_in_list($interface_list_ips, $http_host);
 }
 
+// 取所有group名稱放到array中
 function index_groups()
 {
     global $config, $groupindex;
 
     $groupindex = array();
+    // 當有$config['system']['group']時
     if (isset($config['system']['group'])) {
         $i = 0;
+        // 取group資料
         foreach ($config['system']['group'] as $groupent) {
+            // 當group資料有name時
             if (isset($groupent['name'])) {
+                // 示意: array( admins => 0 )
                 $groupindex[$groupent['name']] = $i;
                 $i++;
             }
@@ -89,6 +94,7 @@ function index_groups()
     return ($groupindex);
 }
 
+// 從$config取得所有user名稱並放至array中
 function index_users()
 {
     global $config;
@@ -126,9 +132,14 @@ function getUserGroups($username)
 
 function &getUserEntry($name)
 {
+    // 從$config取得所有user名稱並放至array中
+    // $userindex = index_users();
+
     global $config, $userindex;
     $false = false;
+    // 當user名單中有傳入的user名稱時
     if (isset($userindex[$name])) {
+        // 用此名稱取得使用者config內資料回傳
         return $config['system']['user'][$userindex[$name]];
     } else {
         return $false;
@@ -150,10 +161,14 @@ function &getUserEntryByUID($uid)
     return false;
 }
 
+// 驗證傳入的group名稱並回傳$config['system']['group']資料
 function &getGroupEntry($name)
 {
+    // $groupindex = index_groups();
+    // 從$config取所有$group名稱放至array中
     global $config, $groupindex;
 
+    // 當傳入的group名稱有在名單中時，用此名稱取得$config['system']['group']資料回傳
     if (isset($groupindex[$name])) {
         return $config['system']['group'][$groupindex[$name]];
     }
@@ -161,8 +176,10 @@ function &getGroupEntry($name)
     return array();
 }
 
+// 取得user權限資料(group)
 function get_user_privileges(&$user)
 {
+    // 當$user['priv']沒設置時 or 不是array時
     if (!isset($user['priv']) || !is_array($user['priv'])) {
         $privs = array();
     } else {
@@ -172,26 +189,35 @@ function get_user_privileges(&$user)
     $names = local_user_get_groups($user);
 
     foreach ($names as $name) {
+        // 帶入取得的group名稱，驗證並取$config['system']['group']資料
         $group = getGroupEntry($name);
+        // 當$group['priv']有設置 and 是array時
         if (isset($group['priv']) && is_array($group['priv'])) {
-            $privs = array_merge($privs, $group['priv']);
+            // array_merge() : 把兩個或多個數組合併為一個數組。
+            // 如果鍵名有重複，該鍵的鍵值為最後一個鍵名對應的值（後面的覆蓋前面的）。如果數組是數字索引的，則鍵名會以連續方式重新索引。
+            $privs = array_merge($privs, $group['priv']); // 把權限放在同一個array中
         }
     }
-    return $privs;
+    return $privs; // 回傳取得的所有權限array
 }
 
+// 取得user擁有的權限與帶入值做比較
 function userHasPrivilege($userent, $privid = false)
 {
+    // 當$userent不是array時
     if (!$privid || !is_array($userent)) {
         return false;
     }
 
+    // 取得所有權限
     $privs = get_user_privileges($userent);
 
+    // 當取得的權限資料不是array時
     if (!is_array($privs)) {
         return false;
     }
 
+    // 當取得的權限資料內沒有$privid(例如 user-config-readonly)時回傳false
     if (!in_array($privid, $privs)) {
         return false;
     }
@@ -446,25 +472,41 @@ function local_user_set_password(&$user, $password = null)
     }
 }
 
+// 取得使用者群組
 function local_user_get_groups($user)
 {
     global $config;
 
     $groups = array();
 
+    // 沒有設置group時
     if (!isset($config['system']['group'])) {
         return $groups;
     }
 
+    // 取出group資料
     foreach ($config['system']['group'] as $group) {
+        // 當有$group['member']時
         if (isset($group['member'])) {
+            // 在 $group['member'] array中若有$user['uid']時
             if (in_array($user['uid'], $group['member'])) {
                 $groups[] = $group['name'];
             }
         }
     }
+    // $group['member'] 與 $user['uid'] 示意:
+    // <group>
+    //   <name>admins</name>
+    //   <member>0</member>
+    //   <member>2001</member>
+    //   <member>2002</member>
+    // </group>
+    //
+    // <user>
+    //   <uid>0</uid>
+    // </user>
 
-    sort($groups);
+    sort($groups); // 由小到大排序
 
     return $groups;
 }
