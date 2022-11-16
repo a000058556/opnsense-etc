@@ -38,16 +38,37 @@ function plugins_scan()
 
     $ret = array();
 
+    // glob()取得匹配之檔案路徑存為array
+    // 取/usr/local/etc/inc/plugins.inc.d/中的所有.int結尾的檔案路徑
+    // $plugins = Array ( 
+    // [0] => /usr/local/etc/inc/plugins.inc.d/core.inc 
+    // [1] => /usr/local/etc/inc/plugins.inc.d/dhcpd.inc 
+    // [2] => /usr/local/etc/inc/plugins.inc.d/dnsmasq.inc 
+    // [3] => /usr/local/etc/inc/plugins.inc.d/dpinger.inc 
+    // ...
+    // [18] => /usr/local/etc/inc/plugins.inc.d/webgui.inc 
+    // )
     $plugins = glob($path . '*' . $ext);
     if (!is_array($plugins)) {
         return $ret;
     }
 
-    sort($plugins);
+    sort($plugins); // 覆蓋KEY值，由內容小到大(A~z)重新排序。
 
     foreach ($plugins as $plugin) {
-        $name = preg_replace('/' . preg_quote($path, '/') . '/', '', $plugin);
-        $name = preg_replace('/' . preg_quote($ext, '/') . '/', '', $name);
+        // preg_replace( pattern, replacement, subject [, int limit ] )  用於正則表達式的搜索和替換。
+        // pattern	    正則表達式 => /\/usr\/local\/etc\/inc\/plugins\.inc\.d\//
+        // replacement	替換的內容 => ''
+        // subject	    需要匹配替換的對象 => $plugin
+        // limit	    可選，指定替換的個數，如果省略limit 或者其值為-1，則所有的匹配項都會被替換
+
+        // preg_quote()需要參數str 並向其中每個正則表達式語法中的字符前增加一個反斜線'\'取消符號功能。
+        // 斜線在正則表達中並非特殊功能符合，因此帶入'/', 讓其可被添加反斜線
+        // preg_quote($path, '/') = \/usr\/local\/etc\/inc\/plugins\.inc\.d\/
+        $name = preg_replace('/' . preg_quote($path, '/') . '/', '', $plugin); // 去路徑得到core.inc 
+        // preg_quote($ext, '/') = \.inc
+        $name = preg_replace('/' . preg_quote($ext, '/') . '/', '', $name); // 去副檔名.inc得到core
+        // file_exists()如果指定的文件或目錄存在則返回 true。 若clash內有檔案相對應。
         if (file_exists($clash . $name . '.inc') || file_exists($clash . $name . '.class')) {
             /*
              * Congratulations, you found the reason why your plugin doesn't
@@ -58,12 +79,13 @@ function plugins_scan()
              * will prevent this from working.  Do not remove this check
              * without discussing the consequences with the authors.
              */
-            continue;
+            continue; // 回到迴圈的開頭，執行「下一次」的迴圈
         }
-        $ret[$name] = $plugin;
+        $ret[$name] = $plugin; 
+        // $name = 去副檔名.inc ， $ret資料形式示意: array( [core] => '/usr/local/etc/inc/plugins.inc.d/core.inc' )
     }
 
-    return $ret;
+    return $ret; // 回傳clash內有相對應檔案的plugin array (plugin名稱 => 路徑+檔名)
 }
 
 function plugins_services()
@@ -167,47 +189,80 @@ function plugins_interfaces()
 {
     global $config;
 
-    $stale_interfaces = [];
+    $stale_interfaces = []; // 舊的interfaces資料
     $changed = false;
 
     // mark previous dynamic registrations stale
     if (isset($config['interfaces'])) {
+        // 取$config['interfaces']放至 key($intf_ref) value($intf_data)
         foreach ($config['interfaces'] as $intf_ref => $intf_data) {
+            // isset($intf_data[0]['internal_dynamic'])的判斷是為了group
             if (isset($intf_data[0]['internal_dynamic']) || isset($intf_data['internal_dynamic'])) {
                 $stale_interfaces[$intf_ref] = 1;
+                // $stale_interfaces內容示意: Array ( [lo0] => 1 [group]=> 1 [test_for_group]=> 1 )
             }
         }
     }
 
     // register / update interfaces
-    foreach (plugins_scan() as $name => $path) {
+
+    // 透過plugins_scan()載入有clash檔案的plugin名稱 => 檔案位置
+    foreach (plugins_scan() as $name => $path) { 
         try {
-            include_once $path;
+            include_once $path; // 透過檔案位置引入舊檔案?
         } catch (\Error $e) {
             error_log($e);
         }
-        $func = sprintf('%s_interfaces', $name);
+        $func = sprintf('%s_interfaces', $name); // core_interfaces
+        // function_exists()檢查是否存在此function，存在返回TRUE，否則返回FALSE
         if (function_exists($func)) {
-            foreach ($func() as $intf_ref => $intf_data) {
+            // plugins有function的檔名:
+            // 'ipsec_interfaces'
+            // 'loopback_interfaces'
+            // 'openvpn_interfaces'
+            // 'pf_interfaces'
+            foreach ($func() as $intf_ref => $intf_data) { // 取得修改後檔案?
+            // 取loopback.inc中的loopback_interfaces()作為範例
+            // function loopback_interfaces()
+            // {
+            //     return [
+            //         'lo0' => [
+            //             'descr' => gettext('Loopback'),
+            //             'enable' => true,
+            //             'if' => 'lo0',
+            //             'ipaddr' => '127.0.0.1',
+            //             'ipaddrv6' => '::1',
+            //             'subnet' => '8',
+            //             'subnetv6' => '128',
+            //             'type' => 'none',
+            //             'virtual' => true,
+            //         ]
+            //     ];
+            // }
+
+            // $intf_ref =>'lo0'
+            // $intf_data => array['descr' => gettext('Loopback'),...]
                 if (is_array($intf_data)) {
                     // mark interface used
                     if (isset($stale_interfaces[$intf_ref])) {
-                        unset($stale_interfaces[$intf_ref]);
+                        unset($stale_interfaces[$intf_ref]); // 清除key與內容
                     }
                     if (isset($config['interfaces'][$intf_ref][0])) {
                         // undo stupid listags() turning our item into a new array, see src/etc/inc/xmlparse.inc
                         $intf_config = &config_read_array('interfaces', $intf_ref, 0);
                     } else {
-                        $intf_config = &config_read_array('interfaces', $intf_ref);
+                        $intf_config = &config_read_array('interfaces', $intf_ref); // 載入config資料
                     }
+                    // 若internal_dynamic未設置
                     if (!isset($intf_config['internal_dynamic'])) {
                         $intf_config['internal_dynamic'] = true;
                         $changed = true;
                     }
                     // traverse and diff interface properties with known configuration
                     foreach ($intf_data as $prop_name => $prop_value) {
+                        // 若$intf_config[$prop_name]為空值 and $prop_value不為空(新增) or $intf_config[$prop_name] != $prop_value(修改)
                         if ((empty($intf_config[$prop_name]) && !empty($prop_value)) || $intf_config[$prop_name] != $prop_value) {
-                            $intf_config[$prop_name] = $prop_value;
+                            $intf_config[$prop_name] = $prop_value; // 寫入變更後資料
                             $changed = true;
                         }
                     }
@@ -216,7 +271,7 @@ function plugins_interfaces()
         }
     }
 
-    // cleanup registrations
+    // cleanup registrations 清理註冊
     foreach ($stale_interfaces as $intf_ref => $no_data) {
         if (isset($config['interfaces'][$intf_ref])) {
             unset($config['interfaces'][$intf_ref]);

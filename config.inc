@@ -202,6 +202,8 @@ function write_config($desc = '', $backup = true)
         }
     }
 
+    // 新增或修改interfaces到config's interfaces section
+    // 回傳$changed = true; or $changed = false;
     plugins_interfaces();
 
     $cnf = OPNsense\Core\Config::getInstance();
