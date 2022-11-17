@@ -43,7 +43,7 @@ final class product
         return self::$instance;
     }
 
-    private function __construct()
+    private function __construct() // 取得核心(版本)相關資料
     {
         self::$data = json_decode(file_get_contents('/usr/local/opnsense/version/core'), true);
     }
@@ -206,22 +206,22 @@ function write_config($desc = '', $backup = true)
     // 回傳$changed = true; or $changed = false;
     plugins_interfaces();
 
-    $cnf = OPNsense\Core\Config::getInstance();
-    $cnf->fromArray($config);
-    $revision_info = make_config_revision_entry($desc);
+    $cnf = OPNsense\Core\Config::getInstance(); // 建立實例
+    $cnf->fromArray($config); // 在實例中導入一個 PHP array並放入$config資料
+    $revision_info = make_config_revision_entry($desc); // 取得執行修改的使用者資訊
 
     try {
         $cnf->save($revision_info, $backup);
     } catch (OPNsense\Core\ConfigException $e) {
-        // write failure
+        // write failure 寫入錯誤訊息
         syslog(LOG_ERR, 'WARNING: Config contents could not be saved. Could not open file!');
         return -1;
     }
 
     /* on successful save, serialize config back to global */
-    $config = $cnf->toArray(listtags());
+    $config = $cnf->toArray(listtags()); // 儲存成功將$cnf推回global $config
 
-    return $config;
+    return $config; // 回傳global $config
 }
 
 function config_restore($conffile)
@@ -261,28 +261,35 @@ function &config_read_array()
     return $current;
 }
 
+// 建立config修訂條目
 function make_config_revision_entry($desc = '')
 {
+    // 使用者若有登入，$username = $_SESSION['Username']
     if (!empty($_SESSION['Username'])) {
         $username = $_SESSION['Username'];
+    // 若沒登入，則執行cmd指令取使用者名稱
     } else {
+        // shell_exec()執行CMD指令並回傳內容存於變數中(儲存成純文字內容)
         $username = '(' . trim(shell_exec('/usr/bin/whoami')) . ')';
+        // /usr/bin/whoami (回覆使用者名稱) 例: root 
     }
 
+    // 若有使用者ip位置
     if (!empty($_SERVER['REMOTE_ADDR'])) {
         $username .= '@' . $_SERVER['REMOTE_ADDR'];
     }
 
+     // 若沒有使用者說明
     if (empty($desc)) {
         $desc = sprintf('%s made changes', $_SERVER['SCRIPT_NAME']);
     }
-
+    // 將資料放入array
     $revision = array();
     $revision['username'] = $username;
-    $revision['time'] = microtime(true);
+    $revision['time'] = microtime(true); // 當前 Unix 時間戳秒數，當microtime 使用 true 參數輸出的結果具有四捨五入的功能
     $revision['description'] = $desc;
 
-    return $revision;
+    return $revision;// 回傳使用者資訊
 }
 
 /**

@@ -256,6 +256,10 @@ function is_subsystem_dirty($subsystem = '')
 
 function mark_subsystem_dirty($subsystem = '')
 {
+    // touch(filename,time,atime)  設置指定文件的訪問和修改時間
+    // filename 必須 要設置的文件 > "/tmp/{$subsystem}.dirty"
+    // time 可選 設置時間(預設為系統時間)
+    // atime 可選 設置訪問時間(預設為系統時間)
     touch("/tmp/{$subsystem}.dirty");
 }
 
