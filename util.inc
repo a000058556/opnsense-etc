@@ -327,6 +327,10 @@ function exit_on_bootup($callback = null, $arguments = [])
 /* validate non-negative numeric string, or equivalent numeric variable */
 function is_numericint($arg)
 {
+    // is_int()檢測$arg是否為整數 and >=0
+    // 或
+    // is_string()是字串 and strlen()返回字符串的長度 >0 and ctype_digit()檢測$arg是否為純數字
+    // 是整數回傳true 非整數回傳false
     return (((is_int($arg) && $arg >= 0) || (is_string($arg) && strlen($arg) > 0 && ctype_digit($arg))) ? true : false);
 }
 

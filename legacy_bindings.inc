@@ -127,12 +127,15 @@ function legacy_move_config_list_items($source, $id, $items)
         // input of wrong type, return empty array
         return array();
     } elseif (!is_array($items) || !is_numericint($id)) {
+        // 從util.inc調用is_numericint()，確認$id不是整數
         // selected items isn't an array or selected item isn't an int, return input
-        return $source;
+        return $source; // 回船原資料
     } else {
         // input types are valid, move items around
         // copy all rules before selected target ($id) and not in items
+        // min() 函數返回一個數組(幾個指定值中)中的最小值。
         for ($i = 0; $i < min($id, count($source)); $i++) {
+            // 當$i不在$item中時
             if (!in_array($i, $items)) {
                 $new_config[] = $source[$i];
             }
