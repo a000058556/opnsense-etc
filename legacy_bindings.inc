@@ -129,7 +129,7 @@ function legacy_move_config_list_items($source, $id, $items)
     } elseif (!is_array($items) || !is_numericint($id)) {
         // 從util.inc調用is_numericint()，確認$id不是整數
         // selected items isn't an array or selected item isn't an int, return input
-        return $source; // 回船原資料
+        return $source; // 回傳原資料
     } else {
         // input types are valid, move items around
         // copy all rules before selected target ($id) and not in items
