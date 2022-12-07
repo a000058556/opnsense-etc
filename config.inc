@@ -297,20 +297,33 @@ function make_config_revision_entry($desc = '')
  * @param array $filters list of filters to apply
  * @return array interfaces
  */
+
+ // $filters = array(['enable' => true, 'virtual' => false])
 function legacy_config_get_interfaces($filters = array())
 {
     $interfaces = array();
 
+    // 取的interfaces資料，並以$ifname => $iface(lo0 = Array(內容))方式寫入至$iface，只取$iface[0] (interfaces名稱)
     foreach (config_read_array('interfaces') as $ifname => $iface) {
         // undo stupid listags() turning our item into a new array, preventing certain names to be used as interface.
         // see src/etc/inc/xmlparse.inc
         if (isset($iface[0])) {
+            // 取 Array(內容)有設值的第[0]位
+            // 範例 Array ( 
+            // [internal_dynamic] => 1 
+            // [enable] => 1 
+            // [if] => group 
+            // [descr] => group 
+            // [virtual] => 1 
+            // [type] => group )
             $iface = $iface[0];
         }
 
         // apply filters
         $iface_match = true;
         foreach ($filters as $filter_key => $filter_value) {
+            // array(['enable' => true, 'virtual' => false])
+            // 當$iface[$filter_key]有設定時
             if ($filter_key == 'enable' && isset($iface[$filter_key])) {
                 $field_value = true;
             } else {

@@ -1557,6 +1557,8 @@ function interface_wireless_clone($realif, $wlcfg)
     return true;
 }
 
+// $ifcfg =  $a_interfaces[$if]
+// 範例 $if = wan
 function interface_sync_wireless_clones(&$ifcfg, $sync_changes = false) /* XXX kill side effect */
 {
     global $config;
@@ -3352,9 +3354,11 @@ function DHCP_Config_File_Substitutions($wancfg, $wanif, $dhclientconf)
 
 
 /* convert fxp0 -> wan, etc. */
+// 取得真實interface名稱
 function convert_real_interface_to_friendly_interface_name($interface = 'wan')
 {
     // search direct
+    // 取得所有interfaces
     $all_interfaces = legacy_config_get_interfaces();
     foreach ($all_interfaces as $ifname => $ifcfg) {
         if ($ifname == $interface || $ifcfg['if'] == $interface) {
@@ -3457,6 +3461,7 @@ function interface_parent_devices($interface)
                 break;
             }
         }
+    // 尋找第一個字
     } elseif (strstr($realif, 'bridge')) {
         foreach (config_read_array('bridges', 'bridged') as $bridge) {
             if ($realif == $bridge['bridgeif']) {

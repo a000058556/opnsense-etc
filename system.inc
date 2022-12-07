@@ -248,18 +248,18 @@ function get_locale_list()
 
     /* first one is the default */
     $locales['en_US'] = gettext('English');
-    $locales['cs_CZ'] = gettext('Czech');
+    // $locales['cs_CZ'] = gettext('Czech');
     $locales['zh_CN'] = gettext('Chinese (Simplified)');
-    $locales['fr_FR'] = gettext('French');
-    $locales['de_DE'] = gettext('German');
-    $locales['it_IT'] = gettext('Italian');
+    // $locales['fr_FR'] = gettext('French');
+    // $locales['de_DE'] = gettext('German');
+    // $locales['it_IT'] = gettext('Italian');
     $locales['ja_JP'] = gettext('Japanese');
-    $locales['no_NO'] = gettext('Norwegian');
-    $locales['pt_BR'] = gettext('Portuguese (Brazil)');
-    $locales['pt_PT'] = gettext('Portuguese (Portugal)');
-    $locales['ru_RU'] = gettext('Russian');
-    $locales['es_ES'] = gettext('Spanish');
-    $locales['tr_TR'] = gettext('Turkish');
+    // $locales['no_NO'] = gettext('Norwegian');
+    // $locales['pt_BR'] = gettext('Portuguese (Brazil)');
+    // $locales['pt_PT'] = gettext('Portuguese (Portugal)');
+    // $locales['ru_RU'] = gettext('Russian');
+    // $locales['es_ES'] = gettext('Spanish');
+    // $locales['tr_TR'] = gettext('Turkish');
 
     return $locales;
 }
